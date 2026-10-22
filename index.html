@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PATRON MEGA ULTIMATE</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --gold: #d4af37;
+            --gold-light: #ffdf00;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --card-bg: rgba(20, 20, 20, 0.9);
+            --green: #00ff88;
+            --red: #ff3333;
+            --blue: #3498db;
+            --purple: #9b59b6;
+            --orange: #e67e22;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        
+        body { 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            padding-bottom: 80px; 
+            overflow-x: hidden; 
+            background-image: radial-gradient(circle at 15% 50%, rgba(212, 175, 55, 0.08), transparent 25%), radial-gradient(circle at 85% 30%, rgba(255, 223, 0, 0.05), transparent 25%);
+            background-size: 200% 200%;
+            animation: moveBackground 10s linear infinite alternate;
+        }
+        @keyframes moveBackground { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+
+        /* Splash & Security */
+        #splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s ease-out; }
+        .splash-logo { font-size: 80px; color: var(--gold); animation: techSpin 2s infinite linear; margin-bottom: 20px; }
+        .splash-title { font-size: 28px; font-weight: 900; color: var(--gold-light); letter-spacing: 3px; text-transform: uppercase; }
+        @keyframes techSpin { 0% { transform: rotateY(0deg) scale(1); } 50% { transform: rotateY(180deg) scale(1.2); } 100% { transform: rotateY(360deg) scale(1); } }
+        .hidden { opacity: 0; pointer-events: none; }
+
+        #security-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .sec-box { background: var(--card-bg); border: 1px solid var(--gold); padding: 30px; border-radius: 20px; text-align: center; width: 85%; max-width: 350px; }
+        .sec-box h2 { color: var(--gold); margin-bottom: 10px; }
+        .sec-box input { width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin: 20px 0; text-align: center; font-size: 20px; outline: none; }
+        .sec-box button { width: 100%; padding: 15px; background: var(--gold); color: black; font-weight: bold; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; }
+
+        /* Header & Ticker */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: sticky; top: 0; z-index: 100; background: rgba(10,10,10,0.9); border-bottom: 1px solid rgba(212, 175, 55, 0.2);}
+        .username { font-size: 16px; font-weight: bold; color: var(--gold-light); }
+        .rank-badge { background: linear-gradient(90deg, #b8860b, #ffd700); padding: 3px 10px; border-radius: 10px; font-size: 10px; color: #000; font-weight: bold;}
+        
+        #live-ticker { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid var(--gold); border-radius: 20px; padding: 5px 15px; font-size: 11px; color: var(--green); z-index: 99; display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity 0.5s;}
+        #live-ticker.show { opacity: 1; }
+
+        /* Pages */
+        .page { display: none; padding: 20px; padding-top: 30px;}
+        .page.active { display: block; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Mine Page */
+        .assets-title { text-align: center; font-size: 12px; color: var(--gold); letter-spacing: 2px; }
+        .main-balance { text-align: center; font-size: 42px; font-weight: bold; color: white; text-shadow: 0 0 20px rgba(212, 175, 55, 0.5); margin: 10px auto; border: 2px solid var(--gold); border-radius: 50px; padding: 10px 20px; width: max-content; background: rgba(0,0,0,0.6); }
+        .profit-badge { text-align: center; background: rgba(0, 255, 136, 0.1); border: 1px solid var(--green); color: var(--green); padding: 8px; border-radius: 15px; font-size: 16px; font-weight: bold; margin: 10px auto; width: max-content; }
+        
+        .tap-area { display: flex; justify-content: center; margin: 20px 0; position: relative; height: 230px; align-items: center; }
+        .main-avatar { width: 220px; height: 220px; border-radius: 50%; border: 6px solid var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.4); cursor: pointer; position: relative; z-index: 10; background: #111; overflow: hidden; transition: transform 0.05s; }
+        .main-avatar:active { transform: scale(0.92); } 
+        .main-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .energy-container { width: 90%; margin: 0 auto; background: #222; height: 15px; border-radius: 10px; overflow: hidden; border: 1px solid var(--gold); position: relative;}
+        .energy-bar { height: 100%; background: linear-gradient(90deg, #f1c40f, #e67e22); width: 100%; transition: width 0.2s; }
+        .energy-text { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: bold; color: #000; }
+
+        .btn-claim { width: 100%; padding: 18px; border-radius: 50px; font-size: 22px; font-weight: bold; color: #000; background: linear-gradient(90deg, #d4af37, #ffdf00, #d4af37); border: none; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); cursor: pointer; text-transform: uppercase; margin-top: 10px;}
+
+        /* Generic Cards */
+        .card { background: var(--card-bg); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 15px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .btn-go { background: var(--gold); color: black; font-weight: bold; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px;}
+        .btn-go:disabled { background: #333; color: #888; cursor: not-allowed; }
+
+        /* Upgrades & Maintenance */
+        .upgrade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .upgrade-card { background: var(--card-bg); border: 1px solid #444; border-radius: 15px; padding: 15px; text-align: center; }
+        .upgrade-btn { background: var(--green); color: #000; border: none; padding: 10px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;}
+        .upgrade-btn:disabled { background: #333; color: #888; }
+
+        /* Games & Tasks */
+        .game-box { text-align: center; background: var(--card-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--purple); }
+        .tap-target { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, var(--purple), #4a235a); margin: 20px auto; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; cursor: pointer; user-select: none; border: 4px solid #fff;}
+        .tap-target:active { transform: scale(0.95); }
+
+        /* Spin */
+        .wheel-container { position: relative; width: 250px; height: 250px; margin: 20px auto; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#e74c3c 0 45deg, #f1c40f 45deg 90deg, #2ecc71 90deg 135deg, #3498db 135deg 180deg, #9b59b6 180deg 225deg, #e67e22 225deg 270deg, #1abc9c 270deg 315deg, #c0392b 315deg 360deg); border: 6px solid var(--gold); transition: transform 4s cubic-bezier(0.1, 0.8, 0.1, 1); }
+        .spin-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 4px solid var(--gold); width: 70px; height: 70px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: var(--gold); cursor: pointer; z-index: 10;}
+
+        /* Market & Shop */
+        .market-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #333; align-items: center;}
+        .btn-buy-sell { background: var(--gold); color: black; border: none; padding: 5px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;}
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,10,0.95); border-top: 1px solid rgba(212, 175, 55, 0.3); display: flex; justify-content: space-around; padding: 10px 0 15px 0; z-index: 500; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-muted); cursor: pointer; }
+        .nav-item.active { color: var(--gold-light); }
+        .nav-icon { font-size: 20px; margin-bottom: 5px; }
+
+        /* Modals */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: #111; padding: 20px; border-radius: 20px; width: 90%; max-width: 400px; border: 1px solid var(--gold); text-align: center;}
+        .modal-title { color: var(--gold); margin-bottom: 15px; }
+        .input-field { width: 100%; background: #000; border: 1px solid #333; padding: 14px; border-radius: 10px; color: white; margin-bottom: 15px; outline: none; text-align: center; font-size: 18px;}
+        .pay-methods { display: flex; gap: 10px; margin-bottom: 15px; }
+        .pay-method { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: #222; border: 1px solid #444; cursor: pointer; font-size: 12px;}
+        .pay-method.active { border-color: var(--gold); color: var(--gold); }
+        .file-input { width: 100%; margin-bottom: 15px; color: white; }
+
+        /* Animations */
+        .flying-coin { position: absolute; font-size: 30px; pointer-events: none; z-index: 50; animation: flyOut 0.5s ease-out forwards; }
+        @keyframes flyOut { 0% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.2) rotate(720deg); } }
+        .floating-text { position: absolute; color: white; font-size: 24px; font-weight: bold; pointer-events: none; z-index: 100; animation: floatUpFade 0.6s ease-out forwards; text-shadow: 0 0 10px var(--gold); }
+        @keyframes floatUpFade { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.5); } }
+
+        /* Toast */
+        #toast { visibility: hidden; min-width: 250px; background-color: var(--gold); color: black; text-align: center; border-radius: 10px; padding: 16px; position: fixed; z-index: 3000; left: 50%; bottom: 100px; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-weight: bold; }
+        #toast.show { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <!-- Splash & Security -->
+    <div id="splash">
+        <div class="splash-logo"><i class="fa-solid fa-gem"></i></div>
+        <div class="splash-title">PATRON MEGA</div>
+    </div>
+
+    <div id="security-modal">
+        <div class="sec-box">
+            <h2><i class="fa-solid fa-shield-halved"></i> Security Check</h2>
+            <h1 id="math-q" style="font-size: 32px; color: var(--gold); margin-top: 15px;">6 + 3</h1>
+            <input type="number" id="math-a" placeholder="Answer">
+            <button onclick="verifySec()">Verify</button>
+        </div>
+    </div>
+
+    <div id="live-ticker"><i class="fa-solid fa-circle" style="font-size:8px;"></i> <span id="ticker-text">User_X just withdrew 10,000 RTS!</span></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="username" id="username">@User</div>
+            <div class="rank-badge" id="rank-badge"><i class="fa-solid fa-medal"></i> Bronze</div>
+        </div>
+        <div style="font-size: 20px; color: var(--gold);" onclick="switchPage('profile', document.querySelectorAll('.nav-item')[6])"><i class="fa-solid fa-wallet"></i></div>
+    </div>
+
+    <!-- ================= MINE PAGE ================= -->
+    <div id="page-mine" class="page active">
+        <div style="text-align: center;">
+            <div class="assets-title">TOTAL ASSETS</div>
+            <div class="main-balance"><span id="rts-balance">0.00</span> | RTS</div>
+            <div class="profit-badge" id="profit-badge">📈 +0 RTS/hr</div>
+            <div style="font-size: 12px; color: var(--gold); margin-top: 5px;">Market Price: 1 RTS = $<span id="market-price">0.0005</span></div>
+        </div>
+
+        <div class="tap-area" id="tap-area">
+            <div class="main-avatar" onclick="handleTap(event)">
+                <img src="https://cdn-icons-png.flaticon.com/512/2489/2489756.png" alt="Money Bag">
+            </div>
+        </div>
+
+        <div class="energy-container">
+            <div class="energy-bar" id="energy-bar"></div>
+            <div class="energy-text" id="energy-text">1000 / 1000</div>
+        </div>
+
+        <button class="btn-claim" onclick="claimMining()">CLAIM REWARDS</button>
+        
+        <!-- Community Goal -->
+        <div class="card" style="margin-top: 20px; border-color: var(--orange);">
+            <div style="width: 100%;">
+                <h3 style="font-size: 14px; color: var(--orange); text-align: center;"><i class="fa-solid fa-users-rectangle"></i> Community Goal: 1B Taps</h3>
+                <div style="background: #000; height: 10px; border-radius: 5px; margin: 10px 0;">
+                    <div style="background: var(--orange); height: 100%; width: 65%; border-radius: 5px;"></div>
+                </div>
+                <p style="font-size: 10px; text-align: center; color: #888;">650M / 1B (Reward: 50,000 RTS)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= BOOSTERS & MAINTENANCE PAGE ================= -->
+    <div id="page-boosters" class="page">
+        <h2 style="text-align: center; color: var(--gold); margin-bottom: 20px;">Boosters</h2>
+        <div class="upgrade-grid">
+            <div class="upgrade-card">
+                <h4><i class="fa-solid fa-gauge-high"></i> Multitap</h4>
+                <div style="color:var(--gold); margin-bottom:5px;">Lvl <span id="multitap-lvl">1</span></div>
+                <button class="upgrade-btn" id="btn-multitap" onclick="buyUpgrade('multitap')">Cost: 1000</button>
+            </div>
+            <div class="upgrade-card">
+                <h4><i class="fa-solid fa-bolt"></i> Energy</h4>
+                <div style="color:var(--gold); margin-bottom:5px;">Lvl <span id="energy-lvl">1</span></div>
+                <button class="upgrade-btn" id="btn-energy" onclick="buyUpgrade('energy')">Cost: 2000</button>
+            </div>
+        </div>
+
+        <!-- Miner Maintenance -->
+        <div class="card" style="margin-top: 20px; border-color: var(--red);">
+            <div>
+                <h3 style="font-size: 14px;"><i class="fa-solid fa-screwdriver-wrench" style="color:var(--red);"></i> Miner Maintenance</h3>
+                <p style="font-size: 10px; color: #888;">Status: <span id="miner-status" style="color: var(--green);">Healthy</span></p>
+            </div>
+            <button class="btn-go" style="background: var(--red); color: white;" id="btn-maintenance" onclick="doMaintenance()">Repair (50k)</button>
+        </div>
+
+        <!-- Ad Multiplier -->
+        <div class="card" style="margin-top: 20px; border-color: var(--green);">
+            <div>
+                <h3 style="font-size: 14px;"><i class="fa-solid fa-tv" style="color:var(--green);"></i> Ad Multiplier</h3>
+                <p style="font-size: 10px; color: #888;">Watch ad for 3x Mining for 1 hr (<span id="ad-count">5</span>/5 left)</p>
+            </div>
+            <button class="btn-go" style="background: var(--green);" id="btn-watch-ad" onclick="watchAdMultiplier()">Watch Ad</button>
+        </div>
+    </div>
+
+    <!-- ================= GAMES PAGE ================= -->
+    <div id="page-games" class="page">
+        <h2 style="text-align: center; color: var(--gold); margin-bottom: 20px;">Games</h2>
+        
+        <div class="game-box">
+            <h3>Speed Tapping</h3>
+            <div style="font-size: 30px; font-weight: bold; color: var(--green);" id="game-timer">10</div>
+            <div class="tap-target" id="tap-target" onclick="gameTap()">TAP!</div>
+            <h2 id="game-score" style="color: var(--gold);">0</h2>
+            <button class="btn-go" style="margin-top: 20px; width: 100%; padding: 15px; font-size: 16px;" id="start-game-btn" onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- PvP Battle -->
+        <div class="card" style="margin-top: 20px; border-color: var(--red);">
+            <div>
+                <h3 style="font-size: 14px;"><i class="fa-solid fa-swords" style="color:var(--red);"></i> PvP Tap Battle</h3>
+                <p style="font-size: 10px; color: #888;">Bet 10,000 RTS vs Random Player</p>
+            </div>
+            <button class="btn-go" style="background: var(--red); color: white;" onclick="startPvP()">Fight!</button>
+        </div>
+    </div>
+
+    <!-- ================= SPIN PAGE ================= -->
+    <div id="page-spin" class="page">
+        <h2 style="text-align: center; color: var(--gold); margin-bottom: 20px;">Lucky Spin</h2>
+        <div class="wheel-container">
+            <div class="wheel" id="fortune-wheel"></div>
+            <div class="spin-center" onclick="spinWheel()">SPIN</div>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn-go" style="padding: 15px 30px; font-size: 16px;" onclick="spinWheel()">Watch Ad & Spin</button>
+        </div>
+    </div>
+
+    <!-- ================= TASKS PAGE ================= -->
+    <div id="page-tasks" class="page">
+        <h2 style="text-align: center; color: var(--gold); margin-bottom: 20px;">Daily Quests</h2>
+        
+        <div class="card">
+            <div><h3 style="font-size: 14px;">Join Telegram Channel</h3><span style="color: var(--gold); font-size: 12px;">+5000 RTS</span></div>
+            <button class="btn-go" onclick="openScreenshotTask('Join TG', 5000)">Go</button>
+        </div>
+        <div class="card">
+            <div><h3 style="font-size: 14px;">Subscribe to YouTube</h3><span style="color: var(--gold); font-size: 12px;">+5000 RTS</span></div>
+            <button class="btn-go" onclick="openScreenshotTask('Subscribe YT', 5000)">Go</button>
+        </div>
+        <div class="card">
+            <div><h3 style="font-size: 14px;">Follow on TikTok</h3><span style="color: var(--gold); font-size: 12px;">+5000 RTS</span></div>
+            <button class="btn-go" onclick="openScreenshotTask('Follow TikTok', 5000)">Go</button>
+        </div>
+
+        <h2 style="text-align: center; color: var(--gold); margin: 30px 0 20px 0;">Redeem Code</h2>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="redeem-code" style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--gold); background: #000; color: white; outline: none; text-transform: uppercase;" placeholder="Enter Code (DONE)">
+            <button class="btn-go" onclick="redeemCode()">Redeem</button>
+        </div>
+    </div>
+
+    <!-- ================= SHOP & HALL OF FAME PAGE ================= -->
+    <div id="page-shop" class="page">
+        <h2 style="text-align: center; color: var(--gold); margin-bottom: 20px;">Gift Shop</h2>
+        
+        <!-- Telegram Stars Payment -->
+        <div class="card" style="border-color: var(--blue); flex-direction: column; align-items: stretch;">
+            <h3 style="color: var(--blue); text-align: center; margin-bottom: 10px;"><i class="fa-brands fa-telegram"></i> Telegram Stars</h3>
+            <div class="market-item">
+                <div><b>100,000 RTS</b></div>
+                <div><b>50 Stars</b> <br><button class="btn-buy-sell" style="background: var(--blue); color: white;" onclick="buyWithStars(100000, 50)">Buy</button></div>
+            </div>
+            <div class="market-item" style="border: none;">
+                <div><b>500,000 RTS</b></div>
+                <div><b>200 Stars</b> <br><button class="btn-buy-sell" style="background: var(--blue); color: white;" onclick="buyWithStars(500000, 200)">Buy</button></div>
+            </div>
+        </div>
+
+        <h2 style="text-align: center; color: var(--gold); margin: 20px 0;">Hall of Fame</h2>
+        <div class="card" style="flex-direction: column; align-items: stretch; padding: 0;">
+            <div class="market-item" style="color: var(--gold); font-weight: bold;"><span>🥇 CryptoKing</span> <span>2.5M RTS</span></div>
+            <div class="market-item" style="color: silver; font-weight: bold;"><span>🥈 MinerPro</span> <span>1.8M RTS</span></div>
+            <div class="market-item" style="color: #cd7f32; font-weight: bold;"><span>🥉 LuckyStar</span> <span>1.2M RTS</span></div>
+        </div>
+    </div>
+
+    <!-- ================= PROFILE & ADMIN PAGE ================= -->
+    <div id="page-profile" class="page">
+        <h2 style="text-align: center; color: var(--gold); margin-bottom: 20px;">My Profile</h2>
+        
+        <div class="card" style="flex-direction: column; align-items: stretch; text-align: center;">
+            <h3>Your Invite Link</h3>
+            <div style="background: #000; padding: 10px; border-radius: 10px; margin: 10px 0; color: var(--gold); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="ref-link">...</div>
+            <button class="btn-go" onclick="shareInvite()"><i class="fa-solid fa-share-nodes"></i> Share Link (+5000 RTS)</button>
+        </div>
+
+        <div class="card" style="border-color: var(--green);">
+            <div><h3 style="font-size: 16px;"><i class="fa-solid fa-calendar-check" style="color:var(--green);"></i> Daily Lootbox</h3></div>
+            <button class="btn-go" style="background: var(--green);" onclick="claimDailyLoot()">Open Box</button>
+        </div>
+
+        <div class="card" style="border-color: var(--purple);">
+            <div><h3 style="font-size: 16px;"><i class="fa-solid fa-gem" style="color:var(--purple);"></i> VIP Status</h3></div>
+            <button class="btn-go" style="background: var(--purple); color: white;" onclick="openVIP()">Upgrade</button>
+        </div>
+
+        <!-- ADMIN PANEL (Demo) -->
+        <div class="card" style="border-color: var(--red); margin-top: 20px; flex-direction: column; align-items: stretch;">
+            <h3 style="font-size: 16px; color: var(--red); margin-bottom: 10px; text-align: center;"><i class="fa-solid fa-user-shield"></i> Admin Panel (Demo)</h3>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;"><span>Total Users:</span> <b>12,450</b></div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;"><span>Total Paid Out:</span> <b>$1,250</b></div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;"><span>Ad Revenue:</span> <b>$2,100</b></div>
+        </div>
+        
+        <button class="btn-claim" style="font-size: 18px;" onclick="openWithdraw()">Withdraw Funds</button>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchPage('mine', this)"><div class="nav-icon"><i class="fa-solid fa-hammer"></i></div>Mine</div>
+        <div class="nav-item" onclick="switchPage('boosters', this)"><div class="nav-icon"><i class="fa-solid fa-rocket"></i></div>Boost</div>
+        <div class="nav-item" onclick="switchPage('games', this)"><div class="nav-icon"><i class="fa-solid fa-gamepad"></i></div>Games</div>
+        <div class="nav-item" onclick="switchPage('spin', this)"><div class="nav-icon"><i class="fa-solid fa-dharmachakra"></i></div>Spin</div>
+        <div class="nav-item" onclick="switchPage('tasks', this)"><div class="nav-icon"><i class="fa-solid fa-list-check"></i></div>Tasks</div>
+        <div class="nav-item" onclick="switchPage('shop', this)"><div class="nav-icon"><i class="fa-solid fa-store"></i></div>Shop</div>
+        <div class="nav-item" onclick="switchPage('profile', this)"><div class="nav-icon"><i class="fa-solid fa-user"></i></div>Profile</div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Screenshot Task Modal -->
+    <div class="modal-overlay" id="screenshot-modal">
+        <div class="modal-box">
+            <h2 class="modal-title">Verify Task</h2>
+            <p style="font-size: 12px; margin-bottom: 15px;">Please upload a screenshot to verify you completed the task.</p>
+            <input type="file" id="task-screenshot" class="file-input" accept="image/*">
+            <div style="display: flex; gap: 10px;">
+                <button style="flex: 1; padding: 15px; border-radius: 10px; border: none; background: #333; color: white; font-weight: bold;" onclick="closeModal('screenshot-modal')">Cancel</button>
+                <button style="flex: 1; padding: 15px; border-radius: 10px; border: none; background: var(--gold); color: black; font-weight: bold;" onclick="submitScreenshot()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal-overlay" id="withdraw-modal">
+        <div class="modal-box">
+            <h2 class="modal-title">Withdraw RTS</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Minimum: 200,000 RTS</p>
+            <div class="pay-methods">
+                <div class="pay-method active" onclick="selectMethod('Telebirr', this)">Telebirr</div>
+                <div class="pay-method" onclick="selectMethod('Ebirr', this)">Ebirr</div>
+                <div class="pay-method" onclick="selectMethod('Mobile Card', this)">Card</div>
+            </div>
+            <input type="text" id="w-account" class="input-field" placeholder="Phone/Account Number">
+            <input type="number" id="w-amount" class="input-field" placeholder="Amount (Min 200,000)">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button style="flex: 1; padding: 15px; border-radius: 10px; border: none; background: #333; color: white; font-weight: bold;" onclick="closeModal('withdraw-modal')">Cancel</button>
+                <button style="flex: 1; padding: 15px; border-radius: 10px; border: none; background: var(--gold); color: black; font-weight: bold;" onclick="submitWithdraw()">Withdraw</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIP Modal -->
+    <div class="modal-overlay" id="vip-modal">
+        <div class="modal-box">
+            <h2 class="modal-title" style="color: var(--purple);"><i class="fa-solid fa-gem"></i> VIP Upgrade</h2>
+            <h3 style="color: var(--gold); margin-bottom: 20px;">Cost: 1,000,000 RTS</h3>
+            <div style="display: flex; gap: 10px;">
+                <button style="flex: 1; padding: 15px; border-radius: 10px; border: none; background: #333; color: white; font-weight: bold;" onclick="closeModal('vip-modal')">Cancel</button>
+                <button style="flex: 1; padding: 15px; border-radius: 10px; border: none; background: var(--purple); color: white; font-weight: bold;" onclick="buyVIP()">Upgrade</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PvP Modal -->
+    <div class="modal-overlay" id="pvp-modal">
+        <div class="modal-box">
+            <h2 class="modal-title" style="color: var(--red);">PvP Battle</h2>
+            <p>You are fighting against: <b id="pvp-opponent">...</b></p>
+            <h1 id="pvp-timer" style="font-size: 40px; color: var(--gold); margin: 15px 0;">5</h1>
+            <div class="tap-target" id="pvp-tap-target" onclick="pvpTap()" style="width: 100px; height: 100px; font-size: 16px;">TAP!</div>
+            <h3 id="pvp-score" style="margin-top: 10px;">Your Taps: 0</h3>
+        </div>
+    </div>
+
+    <div id="toast">Action Successful!</div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // --- STATE ---
+        let state = {
+            balance: 0,
+            unclaimed: 0,
+            coinsPerTap: 1,
+            maxEnergy: 1000,
+            energy: 1000,
+            miningRate: 100, 
+            multitapLevel: 1,
+            energyLevel: 1,
+            isVIP: false,
+            lastDailyClaim: null,
+            rank: "Bronze",
+            boostActive: false,
+            adWatches: 0,
+            minerHealth: 100 // 100 is healthy
+        };
+        
+        let marketPrice = 0.0005; // Dynamic Price
+
+        const BOT_USERNAME = "PATRON_MINER_bot"; 
+        let mathAnswer = 0;
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                document.getElementById('username').innerText = '@' + (tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name);
+                document.getElementById('ref-link').innerText = `https://t.me/${BOT_USERNAME}?start=ref_${tg.initDataUnsafe.user.id}`;
+            }
+
+            let saved = localStorage.getItem('patronMegaData');
+            if(saved) { state = {...state, ...JSON.parse(saved)}; updateUI(); }
+
+            setTimeout(() => {
+                document.getElementById('splash').classList.add('hidden');
+                setTimeout(() => { generateMath(); document.getElementById('security-modal').style.display = 'flex'; }, 500);
+            }, 2000);
+
+            setInterval(() => {
+                // Mining Rate Logic
+                let rateMultiplier = state.boostActive ? 3 : 1;
+                let vipMultiplier = state.isVIP ? 2 : 1;
+                let maintenancePenalty = state.minerHealth < 100 ? 0.5 : 1; // Penalty if not maintained
+                
+                let ratePerSecond = (state.miningRate * rateMultiplier * vipMultiplier * maintenancePenalty) / 3600;
+                state.unclaimed += ratePerSecond;
+                
+                // Energy Logic
+                if(state.energy < state.maxEnergy) { state.energy += 5; if(state.energy > state.maxEnergy) state.energy = state.maxEnergy; }
+
+                // Dynamic Market Price Logic
+                marketPrice = 0.0005 + (Math.random() * 0.0001);
+                document.getElementById('market-price').innerText = marketPrice.toFixed(5);
+
+                // Miner Health Decay
+                if(state.minerHealth > 0) {
+                    state.minerHealth -= 0.1;
+                    if(state.minerHealth <= 0) {
+                        state.minerHealth = 0;
+                        document.getElementById('miner-status').innerText = "Broken!";
+                        document.getElementById('miner-status').style.color = "var(--red)";
+                    }
+                }
+
+                updateUI();
+            }, 1000);
+
+            startLiveTicker();
+        }
+
+        // --- UI & RANK ---
+        function updateUI() {
+            document.getElementById('rts-balance').innerText = state.balance.toFixed(2);
+            let totalRate = state.miningRate * (state.boostActive?3:1) * (state.isVIP?2:1) * (state.minerHealth < 100 ? 0.5 : 1);
+            document.getElementById('profit-badge').innerText = `📈 +${totalRate.toFixed(0)} RTS/hr`;
+            
+            let energyPercent = (state.energy / state.maxEnergy) * 100;
+            document.getElementById('energy-bar').style.width = energyPercent + '%';
+            document.getElementById('energy-text').innerText = `${Math.floor(state.energy)} / ${state.maxEnergy}`;
+
+            if(state.balance > 5000000) state.rank = "Diamond";
+            else if(state.balance > 1000000) state.rank = "Gold";
+            else if(state.balance > 200000) state.rank = "Silver";
+            else state.rank = "Bronze";
+            document.getElementById('rank-badge').innerHTML = `<i class="fa-solid fa-medal"></i> ${state.rank}`;
+
+            let multiCost = state.multitapLevel * 1000;
+            document.getElementById('btn-multitap').innerText = `Cost: ${multiCost}`;
+            document.getElementById('btn-multitap').disabled = state.balance < multiCost;
+            document.getElementById('multitap-lvl').innerText = state.multitapLevel;
+
+            let energyCost = state.energyLevel * 2000;
+            document.getElementById('btn-energy').innerText = `Cost: ${energyCost}`;
+            document.getElementById('btn-energy').disabled = state.balance < energyCost;
+            document.getElementById('energy-lvl').innerText = state.energyLevel;
+
+            if(state.adWatches >= 5) {
+                document.getElementById('btn-watch-ad').disabled = true;
+                document.getElementById('btn-watch-ad').innerText = "Limit Reached";
+            }
+
+            saveData();
+        }
+
+        function saveData() { localStorage.setItem('patronMegaData', JSON.stringify(state)); }
+
+        // --- TICKER ---
+        function startLiveTicker() {
+            const users = ["CryptoKing", "MinerPro", "Abebe", "Sara", "LuckyStar", "User_X"];
+            setInterval(() => {
+                let ticker = document.getElementById('live-ticker');
+                let text = document.getElementById('ticker-text');
+                let amt = Math.floor(Math.random() * 100000) + 10000;
+                let user = users[Math.floor(Math.random() * users.length)];
+                text.innerText = `${user} just withdrew ${amt.toLocaleString()} RTS!`;
+                ticker.classList.add('show');
+                setTimeout(() => ticker.classList.remove('show'), 4000);
+            }, 15000); 
+        }
+
+        // --- MINING ---
+        function handleTap(e) {
+            if(state.minerHealth <= 0) return showToast("🛠️ Miner is broken! Go to Boost to repair.");
+            if(state.energy < state.coinsPerTap) return showToast("⚡ Out of Energy!");
+            state.unclaimed += state.coinsPerTap;
+            state.energy -= state.coinsPerTap;
+            updateUI();
+            createFloatingText(e.clientX, e.clientY);
+            createFlyingCoins(e.clientX, e.clientY);
+        }
+
+        function claimMining() {
+            if(state.unclaimed <= 0) return showToast("⏳ Nothing to claim!");
+            state.balance += state.unclaimed;
+            let claimed = state.unclaimed;
+            state.unclaimed = 0;
+            updateUI();
+            showToast(`🎉 Claimed +${claimed.toFixed(2)} RTS!`);
+            sendToAdmin("Mining Claim", `Claimed: ${claimed.toFixed(2)} RTS`);
+        }
+
+        // --- TASKS & SCREENSHOT VERIFICATION ---
+        function openScreenshotTask(name, reward) {
+            document.getElementById('screenshot-modal').style.display = 'flex';
+            document.getElementById('task-screenshot').setAttribute('data-task', name);
+            document.getElementById('task-screenshot').setAttribute('data-reward', reward);
+        }
+
+        function submitScreenshot() {
+            const fileInput = document.getElementById('task-screenshot');
+            const taskName = fileInput.getAttribute('data-task');
+            const reward = fileInput.getAttribute('data-reward');
+            
+            if(!fileInput.files[0]) return showToast("❌ Please upload a screenshot!");
+            
+            showToast("⏳ Uploading...");
+            setTimeout(() => {
+                state.balance += parseInt(reward);
+                updateUI();
+                showToast(`✅ Screenshot Sent! +${reward} RTS (Pending Admin Approval)`);
+                sendToAdmin("Task Screenshot", `Task: ${taskName} | Reward: ${reward} RTS`);
+                closeModal('screenshot-modal');
+                fileInput.value = '';
+            }, 1500);
+        }
+
+        // --- GAMES ---
+        let gameInterval, gameScore = 0, gameTime = 10, gameActive = false;
+        function startGame() {
+            if(gameActive) return;
+            gameActive = true; gameScore = 0; gameTime = 10;
+            document.getElementById('game-score').innerText = "0";
+            document.getElementById('start-game-btn').style.display = 'none';
+            gameInterval = setInterval(() => {
+                gameTime--;
+                document.getElementById('game-timer').innerText = gameTime;
+                if(gameTime <= 0) {
+                    clearInterval(gameInterval);
+                    gameActive = false;
+                    document.getElementById('start-game-btn').style.display = 'block';
+                    let reward = gameScore * 200;
+                    state.balance += reward;
+                    updateUI();
+                    showToast(`🏆 Game Over! +${reward} RTS`);
+                    sendToAdmin("Speed Game", `Score: ${gameScore} | +${reward} RTS`);
+                }
+            }, 1000);
+        }
+        function gameTap() {
+            if(!gameActive) return;
+            gameScore++;
+            document.getElementById('game-score').innerText = gameScore;
+        }
+
+        let pvpActive = false, pvpScore = 0, pvpTime = 5, pvpInterval, pvpOpponentScore = 0;
+        function startPvP() {
+            if(state.balance < 10000) return showToast("❌ Need 10,000 RTS to fight!");
+            state.balance -= 10000; updateUI();
+            pvpActive = true; pvpScore = 0; pvpTime = 5; pvpOpponentScore = 0;
+            
+            const names = ["CryptoKing", "MinerPro", "Abebe", "Sara", "LuckyStar"];
+            document.getElementById('pvp-opponent').innerText = names[Math.floor(Math.random() * names.length)];
+            document.getElementById('pvp-score').innerText = "Your Taps: 0";
+            document.getElementById('pvp-timer').innerText = pvpTime;
+            document.getElementById('pvp-modal').style.display = 'flex';
+
+            let oppInterval = setInterval(() => { if(pvpActive) pvpOpponentScore += Math.floor(Math.random() * 3) + 1; }, 500);
+
+            pvpInterval = setInterval(() => {
+                pvpTime--;
+                document.getElementById('pvp-timer').innerText = pvpTime;
+                if(pvpTime <= 0) {
+                    clearInterval(pvpInterval);
+                    clearInterval(oppInterval);
+                    pvpActive = false;
+                    document.getElementById('pvp-modal').style.display = 'none';
+                    
+                    if(pvpScore > pvpOpponentScore) {
+                        state.balance += 20000;
+                        showToast(`🏆 You Won! +20,000 RTS (You: ${pvpScore} vs Opp: ${pvpOpponentScore})`);
+                    } else {
+                        showToast(`😔 You Lost! (You: ${pvpScore} vs Opp: ${pvpOpponentScore})`);
+                    }
+                    updateUI();
+                }
+            }, 1000);
+        }
+        function pvpTap() {
+            if(!pvpActive) return;
+            pvpScore++;
+            document.getElementById('pvp-score').innerText = "Your Taps: " + pvpScore;
+        }
+
+        // --- UPGRADES & SHOP ---
+        function buyUpgrade(type) {
+            if(type === 'multitap') {
+                let cost = state.multitapLevel * 1000;
+                if(state.balance >= cost) { state.balance -= cost; state.multitapLevel++; state.coinsPerTap = state.multitapLevel; showToast("🚀 Multitap Upgraded!"); }
+            } else if(type === 'energy') {
+                let cost = state.energyLevel * 2000;
+                if(state.balance >= cost) { state.balance -= cost; state.energyLevel++; state.maxEnergy += 500; state.energy = state.maxEnergy; showToast("⚡ Energy Upgraded!"); }
+            }
+            updateUI();
+        }
+
+        function watchAdMultiplier() {
+            if(state.adWatches >= 5) return;
+            showToast("📺 Watching Ad...");
+            setTimeout(() => {
+                state.boostActive = true;
+                state.adWatches++;
+                updateUI();
+                showToast("🚀 3x Mining Active for 1 Hour!");
+                setTimeout(() => { state.boostActive = false; updateUI(); }, 3600000); 
+            }, 2000);
+        }
+
+        function doMaintenance() {
+            if(state.balance < 50000) return showToast("❌ Need 50,000 RTS for repair!");
+            state.balance -= 50000;
+            state.minerHealth = 100;
+            document.getElementById('miner-status').innerText = "Healthy";
+            document.getElementById('miner-status').style.color = "var(--green)";
+            updateUI();
+            showToast("🛠️ Miner Repaired!");
+        }
+
+        function buyWithStars(rtsAmount, starCost) {
+            showToast(`⏳ Requesting ${starCost} Stars...`);
+            setTimeout(() => {
+                state.balance += rtsAmount;
+                updateUI();
+                showToast(`✅ +${rtsAmount} RTS Added!`);
+                sendToAdmin("Stars Purchase", `Bought: ${rtsAmount} RTS for ${starCost} Stars`);
+            }, 2000);
+        }
+
+        // --- DAILY & SPIN ---
+        function claimDailyLoot() {
+            const now = new Date().getTime();
+            if(state.lastDailyClaim && (now - state.lastDailyClaim < 86400000)) return showToast("⏳ Already claimed today!");
+            let reward = Math.floor(Math.random() * 50000) + 10000;
+            state.balance += reward; state.lastDailyClaim = now; updateUI();
+            showToast(`🎁 Lootbox Opened! +${reward} RTS`);
+            sendToAdmin("Daily Lootbox", `Opened: +${reward} RTS`);
+        }
+
+        let isSpinning = false;
+        function spinWheel() {
+            if(isSpinning) return; isSpinning = true;
+            let wheel = document.getElementById('fortune-wheel');
+            let randomDeg = Math.floor(1000 + Math.random() * 3600); 
+            wheel.style.transform = `rotate(${randomDeg}deg)`;
+            setTimeout(() => {
+                isSpinning = false;
+                let winAmount = Math.floor(Math.random() * 50000) + 5000;
+                state.balance += winAmount; updateUI();
+                showToast(`🎉 Won ${winAmount} RTS!`);
+                sendToAdmin("Spin Wheel", `Won: ${winAmount} RTS`);
+            }, 4000);
+        }
+
+        // --- WITHDRAW & VIP ---
+        function openWithdraw() { document.getElementById('withdraw-modal').style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        let selectedMethod = 'Telebirr';
+        function selectMethod(method, el) {
+            document.querySelectorAll('.pay-method').forEach(e => e.classList.remove('active'));
+            el.classList.add('active'); selectedMethod = method;
+        }
+        function submitWithdraw() {
+            const acc = document.getElementById('w-account').value;
+            const amt = parseFloat(document.getElementById('w-amount').value);
+            if(!acc || !amt) return showToast("❌ Fill all fields!");
+            if(amt < 200000) return showToast("❌ Minimum 200,000 RTS!");
+            if(amt > state.balance) return showToast("❌ Insufficient Balance!");
+            state.balance -= amt; updateUI();
+            sendToAdmin("Withdraw Request", `Method: ${selectedMethod}\nAccount: ${acc}\nAmount: ${amt} RTS`);
+            showToast("✅ Withdraw Sent!"); closeModal('withdraw-modal');
+        }
+
+        function openVIP() { document.getElementById('vip-modal').style.display = 'flex'; }
+        function buyVIP() {
+            if(state.balance >= 1000000) {
+                state.balance -= 1000000; state.isVIP = true; updateUI();
+                showToast("👑 VIP Activated!"); closeModal('vip-modal');
+            } else { showToast("❌ Need 1,000,000 RTS!"); }
+        }
+
+        // --- UTILS ---
+        function switchPage(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        }
+        function shareInvite() {
+            const link = document.getElementById('ref-link').innerText;
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("🚀 Join PATRON ULTIMATE!")}`);
+            state.balance += 5000; updateUI(); showToast("+5000 RTS for sharing!");
+        }
+        function sendToAdmin(action, details) {
+            if(!tg.initDataUnsafe || !tg.initDataUnsafe.user) return;
+            fetch('/api/complete_task', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_name: action, user_id: tg.initDataUnsafe.user.id, username: tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name, details: details })
+            }).catch(e => console.log(e));
+        }
+        function createFloatingText(x, y) {
+            let txt = document.createElement('div'); txt.className = 'floating-text';
+            txt.innerText = `+${state.coinsPerTap}`; txt.style.left = (x - 15) + 'px'; txt.style.top = (y - 20) + 'px';
+            document.body.appendChild(txt); setTimeout(() => txt.remove(), 600);
+        }
+        function createFlyingCoins(x, y) {
+            for(let i=0; i<3; i++) { 
+                let coin = document.createElement('div'); coin.className = 'flying-coin'; coin.innerText = '💰';
+                coin.style.left = x + 'px'; coin.style.top = y + 'px';
+                coin.style.setProperty('--dx', ((Math.random() - 0.5) * 200) + 'px');
+                coin.style.setProperty('--dy', ((Math.random() - 0.8) * 150) + 'px');
+                document.body.appendChild(coin); setTimeout(() => coin.remove(), 500);
+            }
+        }
+        function showToast(msg) {
+            const t = document.getElementById("toast"); t.innerText = msg; t.className = "show";
+            setTimeout(() => t.className = t.className.replace("show", ""), 3000);
+        }
+    </script>
+</body>
+</html>
