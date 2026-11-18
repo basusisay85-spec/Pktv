@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APK Forge Cloud — Real Installable APK Compiler</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #060913;
+      --bg-panel: #0f172a;
+      --bg-card: #162033;
+      --bg-input: #090e1a;
+      --border: #26344f;
+      --primary: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: var(--bg-main); color: var(--text-main); padding-bottom: 40px; }
+
+    .navbar {
+      background: linear-gradient(90deg, #0f172a, #1e1b4b, #0f172a);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-logo {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.95rem;
+    }
+    .brand h1 { font-size: 1.05rem; font-weight: 800; }
+    .brand span { font-size: 0.72rem; color: var(--text-muted); display: block; }
+
+    .badge-live {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 18px auto 0;
+      padding: 0 14px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    @media (min-width: 920px) {
+      .container { grid-template-columns: 1.35fr 0.85fr; }
+    }
+
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 0.98rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; }
+
+    input[type="text"], input[type="password"], input[type="number"], input[type="url"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.86rem;
+      outline: none;
+    }
+
+    textarea.code-area {
+      height: 190px;
+      font-family: monospace;
+      color: #7dd3fc;
+      resize: vertical;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      background: var(--bg-input);
+      cursor: pointer;
+    }
+
+    .icon-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--bg-card);
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    .icon-prev {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1.2rem; overflow: hidden; flex-shrink: 0;
+    }
+    .icon-prev img { width: 100%; height: 100%; object-fit: cover; }
+
+    .switch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (max-width: 600px) { .switch-grid { grid-template-columns: 1fr; } }
+
+    .switch-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--bg-card); border: 1px solid var(--border);
+      padding: 9px 12px; border-radius: 8px; font-size: 0.82rem;
+    }
+
+    .cloud-box {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.12));
+      border: 1px solid rgba(99, 102, 241, 0.45);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .btn-real {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-size: 0.96rem;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 10px;
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-zip {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid var(--primary);
+      border-radius: 10px;
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .terminal {
+      background: #03060d;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      height: 220px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.76rem;
+      color: #34d399;
+      margin-top: 12px;
+    }
+    .terminal div { margin-bottom: 5px; line-height: 1.4; }
+
+    .apk-ready-card {
+      display: none;
+      margin-top: 12px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .apk-ready-card a {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 10px 18px;
+      background: #10b981;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">
+    <div class="brand-logo">APK</div>
+    <div>
+      <h1>APK Forge Cloud Compiler</h1>
+      <span>Real Android Gradle APK Builder (No PC Required)</span>
+    </div>
+  </div>
+  <span class="badge-live">● Real Compiler Ready</span>
+</nav>
+
+<div class="container">
+  <!-- Left Column -->
+  <div>
+    <!-- 1. Source Code / ZIP / URL -->
+    <div class="card">
+      <div class="card-title">1. የፕሮጀክት ምንጭ (ZIP / HTML Code / URL)</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="setMode('paneHtml', this)">💻 HTML Code</button>
+        <button class="tab-btn" onclick="setMode('paneZip', this)">📦 Upload ZIP</button>
+        <button class="tab-btn" onclick="setMode('paneUrl', this)">🌐 Website URL</button>
+      </div>
+
+      <div id="paneHtml" class="tab-pane active">
+        <textarea class="code-area" id="srcHtml"><!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patron App</title>
+  <style>
+    body { background: #0f172a; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+    h1 { color: #38bdf8; }
+    button { background: #10b981; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🚀 Patron Real APK</h1>
+  <p>ይህ አፕ በቀጥታ በ Cloud Gradle ተሰርቶ ተጭኗል!</p>
+  <button onclick="alert('በትክክል ይሰራል!')">ሞክር</button>
+</body>
+</html></textarea>
+      </div>
+
+      <div id="paneZip" class="tab-pane">
+        <div class="dropzone" onclick="document.getElementById('zipInput').click()">
+          <strong>📂 የዌብሳይትህን .ZIP ፋይል እዚህ ምረጥ</strong>
+          <p id="zipStatus" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">index.html, CSS, JS የያዘ ZIP ፋይል</p>
+          <input type="file" id="zipInput" accept=".zip" hidden />
+        </div>
+      </div>
+
+      <div id="paneUrl" class="tab-pane">
+        <div class="field">
+          <label>የዌብሳይት ሊንክ (URL)</label>
+          <input type="url" id="srcUrl" value="https://example.com" placeholder="https://..." />
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. APK Identity & Icon -->
+    <div class="card">
+      <div class="card-title">2. የአፑ ስም፣ አይከን እና ሴቲንግ (APK Settings)</div>
+
+      <div class="icon-row">
+        <div class="icon-prev" id="iconPrev">PAT</div>
+        <div style="flex:1;">
+          <label style="font-size: 0.8rem; font-weight: 700; display:block; margin-bottom:5px;">App Icon (PNG / JPG)</label>
+          <input type="file" id="iconInput" accept="image/*" style="font-size: 0.8rem;" />
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>App Name (የአፑ ስም)</label>
+          <input type="text" id="appName" value="Patron Pro" oninput="updateAbbr()" />
+        </div>
+        <div class="field">
+          <label>Package Name (Application ID)</label>
+          <input type="text" id="pkgName" value="com.patron.realapp" />
+        </div>
+        <div class="field">
+          <label>Version Name</label>
+          <input type="text" id="verName" value="1.0.0" />
+        </div>
+        <div class="field">
+          <label>Orientation (አቀማመጥ)</label>
+          <select id="orientation">
+            <option value="portrait" selected>Portrait (ቁመት)</option>
+            <option value="landscape">Landscape (ወርድ)</option>
+            <option value="unspecified">Auto Rotate</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="switch-grid" style="margin-top: 8px;">
+        <label class="switch-item"><span>Fullscreen Mode</span><input type="checkbox" id="optFull" /></label>
+        <label class="switch-item"><span>Enable JavaScript</span><input type="checkbox" id="optJs" checked /></label>
+        <label class="switch-item"><span>Camera Permission</span><input type="checkbox" id="permCam" /></label>
+        <label class="switch-item"><span>GPS Location Permission</span><input type="checkbox" id="permLoc" /></label>
+        <label class="switch-item"><span>Storage / Gallery Upload</span><input type="checkbox" id="permStor" checked /></label>
+        <label class="switch-item"><span>Microphone Permission</span><input type="checkbox" id="permMic" /></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Real Cloud APK Compiler -->
+  <div>
+    <div class="card">
+      <div class="card-title">3. Real APK Cloud Compiler</div>
+
+      <div class="cloud-box">
+        <div style="font-size: 0.83rem; font-weight: 800; color: #93c5fd; margin-bottom: 6px;">
+          ☁️ እውነተኛ የሚጫን APK ለመስራት (GitHub Cloud Engine)
+        </div>
+        <p style="font-size: 0.74rem; color: #cbd5e1; margin-bottom: 10px;">
+          የ GitHub Token ካስገባህ ኮዱ ራሱ ሰርቨር ላይ Gradle አስነስቶ ስልክህ ላይ የሚጫን <b>Real .APK</b> ፋይል ይሰጥሃል!
+        </p>
+        <div class="field" style="margin-bottom: 0;">
+          <label>GitHub Personal Access Token (repo + workflow scope)</label>
+          <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+        </div>
+      </div>
+
+      <button class="btn-real" onclick="compileRealCloudAPK()">
+        🚀 Build Real Installable .APK (Cloud)
+      </button>
+
+      <button class="btn-zip" onclick="downloadOfflineZipOnly()">
+        📦 Or Download Android Project (.ZIP)
+      </button>
+
+      <div class="terminal" id="termLog">
+        <div>[SYSTEM] Real APK Engine Initialized.</div>
+        <div>[INFO] ኮድህን አስገብተህ GitHub Token ሙላና "Build Real .APK" ተጫን።</div>
+      </div>
+
+      <div class="apk-ready-card" id="apkReadyBox">
+        <div style="font-weight: 800; color: #6ee7b7; font-size: 0.92rem;">
+          🎉 እውነተኛው APK ተዘጋጅቷል!
+        </div>
+        <p style="font-size: 0.76rem; color: #cbd5e1; margin-top: 4px;">
+          ከታች ያለውን ቁልፍ ተጭነህ አውርድና ስልክህ ላይ Install አድርገው፦
+        </p>
+        <a id="realApkDownloadLink" href="#" target="_blank">📥 Download Real Signed .APK</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<canvas id="iconCanvas" hidden></canvas>
+
+<script>
+  let activeMode = 'paneHtml';
+  let loadedZip = null;
+  let iconImgObj = null;
+
+  function setMode(paneId, btn) {
+    activeMode = paneId;
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(paneId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function log(msg, color = '#34d399') {
+    const box = document.getElementById('termLog');
+    const div = document.createElement('div');
+    div.style.color = color;
+    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function updateAbbr() {
+    if (!iconImgObj) {
+      const name = document.getElementById('appName').value || 'PAT';
+      document.getElementById('iconPrev').textContent = name.substring(0, 3).toUpperCase();
+    }
+  }
+
+  document.getElementById('zipInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    loadedZip = await JSZip.loadAsync(file);
+    document.getElementById('zipStatus').textContent = `✅ ተመርጧል: ${file.name}`;
+    log(`ZIP loaded: ${file.name}`, '#38bdf8');
+  });
+
+  document.getElementById('iconInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        iconImgObj = img;
+        document.getElementById('iconPrev').innerHTML = `<img src="${ev.target.result}" />`;
+        log(`Icon loaded (${img.width}x${img.height})`, '#a78bfa');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function getIconBase64(size = 192) {
+    const canvas = document.getElementById('iconCanvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (iconImgObj) {
+      ctx.drawImage(iconImgObj, 0, 0, size, size);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, size, size);
+      g.addColorStop(0, '#3b82f6');
+      g.addColorStop(1, '#10b981');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.floor(size * 0.36)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((document.getElementById('appName').value || 'APK').substring(0, 3).toUpperCase(), size / 2, size / 2);
+    }
+    return canvas.toDataURL('image/png').split(',')[1];
+  }
+
+  function buildProjectFilesMap() {
+    const appName = document.getElementById('appName').value.trim() || 'PatronPro';
+    const pkg = document.getElementById('pkgName').value.trim() || 'com.patron.realapp';
+    const pkgPath = pkg.replace(/\./g, '/');
+    const verName = document.getElementById('verName').value.trim() || '1.0.0';
+    const orientation = document.getElementById('orientation').value;
+    const fullscreen = document.getElementById('optFull').checked;
+    const enableJs = document.getElementById('optJs').checked;
+
+    let perms = `    <uses-permission android:name="android.permission.INTERNET" />\n`;
+    if (document.getElementById('permCam').checked) perms += `    <uses-permission android:name="android.permission.CAMERA" />\n`;
+    if (document.getElementById('permLoc').checked) perms += `    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n`;
+    if (document.getElementById('permMic').checked) perms += `    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n`;
+    if (document.getElementById('permStor').checked) perms += `    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n`;
+
+    const manifest = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="${pkg}">
+${perms}
+    <application
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="${appName}"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.AppCompat.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="${orientation}"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+
+    const loadUrl = activeMode === 'paneUrl'
+      ? (document.getElementById('srcUrl').value.trim() || 'https://example.com')
+      : 'file:///android_asset/www/index.html';
+
+    const mainActivity = `package ${pkg};
+import android.os.Bundle;
+import android.view.WindowManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+    private WebView webView;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        ${fullscreen ? 'getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);' : ''}
+        webView = new WebView(this);
+        setContentView(webView);
+        WebSettings s = webView.getSettings();
+        s.setJavaScriptEnabled(${enableJs});
+        s.setDomStorageEnabled(true);
+        s.setAllowFileAccess(true);
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.loadUrl("${loadUrl}");
+    }
+    @Override
+    public void onBackPressed() {
+        if (webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
+    }
+}`;
+
+    const rootGradle = `buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+}
+allprojects { repositories { google(); mavenCentral() } }`;
+
+    const appGradle = `apply plugin: 'com.android.application'
+android {
+    namespace '${pkg}'
+    compileSdk 34
+    defaultConfig {
+        applicationId "${pkg}"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "${verName}"
+    }
+}
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}`;
+
+    const workflowYml = `name: Build Real APK
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+      - name: Compile Signed Debug APK
+        run: gradle assembleDebug
+      - name: Create Release & Attach Real APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          files: app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}`;
+
+    const htmlCode = activeMode === 'paneHtml'
+      ? document.getElementById('srcHtml').value
+      : `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${loadUrl}"></head><body></body></html>`;
+
+    return {
+      appName,
+      files: {
+        'settings.gradle': `include ':app'`,
+        'build.gradle': rootGradle,
+        'app/build.gradle': appGradle,
+        'app/src/main/AndroidManifest.xml': manifest,
+        [`app/src/main/java/${pkgPath}/MainActivity.java`]: mainActivity,
+        'app/src/main/assets/www/index.html': htmlCode,
+        '.github/workflows/build.yml': workflowYml
+      },
+      iconBase64: getIconBase64(192)
+    };
+  }
+
+  // Real Cloud APK Compilation via GitHub REST API
+  async function compileRealCloudAPK() {
+    const token = document.getElementById('ghToken').value.trim();
+    if (!token) {
+      log('❌ እባክህ መጀመሪያ GitHub Token አስገባ! (ወይም ከታች ያለውን ZIP አውርድ)', '#ef4444');
+      alert('እውነተኛ የሚጫን APK በ Cloud እንዲሰራ GitHub Personal Access Token ያስፈልጋል።');
+      return;
+    }
+
+    const project = buildProjectFilesMap();
+    const repoName = `apk-build-${Date.now()}`;
+    const headers = {
+      'Authorization': `token ${token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      log('1/4 Connecting to GitHub Cloud Compiler...', '#60a5fa');
+      const userRes = await fetch('https://api.github.com/user', { headers });
+      if (!userRes.ok) throw new Error('GitHub Token ትክክል አይደለም!');
+      const userData = await userRes.json();
+      const username = userData.login;
+
+      log(`2/4 Creating cloud build workspace (${username}/${repoName})...`, '#60a5fa');
+      const repoRes = await fetch('https://api.github.com/user/repos', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name: repoName, private: true, auto_init: true })
+      });
+      if (!repoRes.ok) throw new Error('Repository መፍጠር አልተቻለም።');
+      await new Promise(r => setTimeout(r, 2000));
+
+      log('3/4 Uploading AndroidManifest, Java, HTML & App Icon...', '#a78bfa');
+      for (const [path, content] of Object.entries(project.files)) {
+        const b64 = btoa(unescape(encodeURIComponent(content)));
+        await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/${path}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ message: `Add ${path}`, content: b64 })
+        });
+      }
+
+      // Upload PNG Icon
+      await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ message: 'Add App Icon', content: project.iconBase64 })
+      });
+
+      log('4/4 Gradle APK Compilation started in Cloud! (60-90 ሰከንድ ይጠብቁ)...', '#facc15');
+
+      // Poll for Release APK
+      for (let i = 0; i < 24; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        log(`⏳ Compiling Android DEX & Signing APK... (${(i + 1) * 5}s)`, '#94a3b8');
+
+        const relRes = await fetch(`https://api.github.com/repos/${username}/${repoName}/releases/tags/v1.0.0`, { headers });
+        if (relRes.ok) {
+          const relData = await relRes.json();
+          if (relData.assets && relData.assets.length > 0) {
+            const apkAsset = relData.assets[0];
+            log('✅ REAL APK COMPILED SUCCESSFULLY!', '#34d399');
+            const box = document.getElementById('apkReadyBox');
+            const link = document.getElementById('realApkDownloadLink');
+            link.href = apkAsset.browser_download_url;
+            box.style.display = 'block';
+            return;
+          }
+        }
+      }
+      log('⚠️ Build ጊዜ ወስዷል፤ GitHub Actions ገጽህ ላይ ገብተህ APKውን ማውረድ ትችላለህ።', '#f59e0b');
+    } catch (err) {
+      log(`❌ Error: ${err.message}`, '#ef4444');
+    }
+  }
+
+  async function downloadOfflineZipOnly() {
+    const project = buildProjectFilesMap();
+    const zip = new JSZip();
+    for (const [path, content] of Object.entries(project.files)) {
+      zip.file(path, content);
+    }
+    zip.file('app/src/main/res/mipmap-xxxhdpi/ic_launcher.png', project.iconBase64, { base64: true });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${project.appName}_Real_Android_Project.zip`;
+    a.click();
+    log('✅ Android Project ZIP downloaded!', '#34d399');
+  }
+</script>
+
+</body>
+</html>
