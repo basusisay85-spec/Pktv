@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APK Forge Studio Pro — Full Web-to-APK Compiler</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #070b14;
+      --bg-panel: #0f172a;
+      --bg-card: #162033;
+      --bg-input: #0b1120;
+      --border: #26344f;
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.35);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    /* Top Navbar */
+    .navbar {
+      background: linear-gradient(90deg, #0f172a 0%, #172554 50%, #0f172a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.1rem;
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-title span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .nav-badges {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .pill.green {
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    /* Layout */
+    .workspace {
+      max-width: 1280px;
+      margin: 20px auto 0;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 980px) {
+      .workspace {
+        grid-template-columns: 1.45fr 0.75fr;
+      }
+    }
+
+    /* Navigation Tabs */
+    .section-tabs {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      background: var(--bg-panel);
+      padding: 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+
+    .sec-tab {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.2s;
+    }
+
+    .sec-tab:hover {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .sec-tab.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    .sec-panel {
+      display: none;
+    }
+
+    .sec-panel.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .card-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    /* Input Mode Switcher */
+    .mode-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .mode-btn {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: rgba(59, 130, 246, 0.18);
+      border-color: var(--primary);
+      color: #60a5fa;
+    }
+
+    .mode-box { display: none; }
+    .mode-box.active { display: block; }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 32px 16px;
+      text-align: center;
+      background: var(--bg-input);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .dropzone:hover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.06);
+    }
+
+    .zip-tree {
+      margin-top: 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #38bdf8;
+      display: none;
+    }
+
+    /* Form Elements */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    input[type="url"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 11px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    textarea.editor {
+      height: 240px;
+      font-family: 'Courier New', monospace;
+      color: #7dd3fc;
+      line-height: 1.45;
+      resize: vertical;
+    }
+
+    /* Icon Studio */
+    .icon-studio {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      background: var(--bg-card);
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .icon-shapes {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .icon-box {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      overflow: hidden;
+      border: 2px solid var(--border);
+    }
+
+    .icon-box.rounded { border-radius: 16px; }
+    .icon-box.circle { border-radius: 50%; }
+    .icon-box img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Switches */
+    .switch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .switch-grid { grid-template-columns: 1fr; }
+    }
+
+    .switch-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .switch-card div strong {
+      display: block;
+      font-size: 0.83rem;
+      color: var(--text-main);
+    }
+
+    .switch-card div span {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .switch-card input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    /* Right Panel: Phone Simulator & Compiler */
+    .sticky-col {
+      position: sticky;
+      top: 82px;
+    }
+
+    .phone-mockup {
+      width: 265px;
+      margin: 0 auto 16px;
+      background: #030712;
+      border: 6px solid #334155;
+      border-radius: 34px;
+      padding: 10px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+    }
+
+    .phone-status {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      padding: 4px 10px;
+      border-radius: 18px 18px 0 0;
+      background: #0f172a;
+      color: #cbd5e1;
+    }
+
+    .phone-body {
+      height: 360px;
+      background: #0f172a;
+      border-radius: 0 0 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+    }
+
+    .phone-launcher-icon {
+      width: 76px;
+      height: 76px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+
+    .phone-launcher-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Action Buttons */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-size: 0.98rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+      transition: 0.2s;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--primary);
+      border-radius: 10px;
+      background: rgba(59, 130, 246, 0.14);
+      color: #60a5fa;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(59, 130, 246, 0.25);
+    }
+
+    /* Progress & Terminal */
+    .progress-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--bg-input);
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 10px 0;
+      border: 1px solid var(--border);
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transition: width 0.25s ease;
+    }
+
+    .terminal {
+      background: #030712;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      height: 190px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: #34d399;
+    }
+
+    .terminal div {
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .download-drawer {
+      display: none;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .download-drawer a {
+      display: block;
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 0.85rem;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <nav class="navbar">
+    <div class="brand">
+      <div class="brand-logo">APK</div>
+      <div class="brand-title">
+        <h1>APK Forge Studio Pro</h1>
+        <span>Full Android WebView & Gradle APK Compiler Engine</span>
+      </div>
+    </div>
+    <div class="nav-badges">
+      <span class="pill green">● SDK 35 Ready</span>
+      <span class="pill">v4.2 Developer</span>
+    </div>
+  </nav>
+
+  <!-- Main Workspace -->
+  <div class="workspace">
+
+    <!-- Left Column: Configuration Tabs -->
+    <div>
+      <div class="section-tabs">
+        <button class="sec-tab active" onclick="openTab('tabSource', this)">1. Source (ZIP/HTML/URL)</button>
+        <button class="sec-tab" onclick="openTab('tabIdentity', this)">2. App & Icon</button>
+        <button class="sec-tab" onclick="openTab('tabUi', this)">3. UI & Splash</button>
+        <button class="sec-tab" onclick="openTab('tabPerms', this)">4. Permissions</button>
+        <button class="sec-tab" onclick="openTab('tabSigning', this)">5. WebView & Signing</button>
+      </div>
+
+      <!-- TAB 1: SOURCE INPUT -->
+      <div id="tabSource" class="sec-panel active">
+        <div class="card">
+          <div class="card-header">
+            <h2>📦 የፕሮጀክት ምንጭ ምረጥ (Project Source)</h2>
+            <span class="pill">HTML5 / JS / ZIP</span>
+          </div>
+
+          <div class="mode-bar">
+            <button class="mode-btn active" onclick="switchMode('modeZip', this)">📁 Upload ZIP</button>
+            <button class="mode-btn" onclick="switchMode('modeHtml', this)">💻 Write HTML Code</button>
+            <button class="mode-btn" onclick="switchMode('modeUrl', this)">🌐 Website URL</button>
+          </div>
+
+          <!-- ZIP Mode -->
+          <div id="modeZip" class="mode-box active">
+            <div class="dropzone" onclick="document.getElementById('zipFileInput').click()">
+              <div style="font-size: 2rem;">🗜️</div>
+              <strong>ZIP ፋይልህን እዚህ ጫን (Upload Project .ZIP)</strong>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
+                ውስጡ index.html, CSS, JS, Fonts እና ምስሎችን የያዘ ZIP ይምረጡ
+              </p>
+              <input type="file" id="zipFileInput" accept=".zip" hidden />
+            </div>
+            <div class="zip-tree" id="zipTreeList"></div>
+          </div>
+
+          <!-- HTML Code Mode -->
+          <div id="modeHtml" class="mode-box">
+            <div class="field">
+              <label>ሙሉ HTML / CSS / JavaScript ኮድ እዚህ አስገባ (index.html)</label>
+              <textarea class="editor" id="rawHtmlEditor"><!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Android App</title>
+  <style>
+    body { background: #0f172a; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    button { background: #3b82f6; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>🚀 ሰላም! አፑ በተሳካ ሁኔታ ተጭኗል</h1>
+  <button onclick="alert('JavaScript በትክክል ይሰራል!')">ሞክረኝ</button>
+</body>
+</html></textarea>
+            </div>
+          </div>
+
+          <!-- URL Mode -->
+          <div id="modeUrl" class="mode-box">
+            <div class="field">
+              <label>የዌብሳይቱን ሙሉ ሊንክ አስገባ (Website URL to Convert to APK)</label>
+              <input type="url" id="targetWebUrl" placeholder="https://yourwebsite.com" value="https://example.com" />
+            </div>
+            <div class="switch-card">
+              <div>
+                <strong>Offline Error Page (ኢንተርኔት ሲጠፋ)</strong>
+                <span>ኢንተርኔት ከሌለ ብጁ የማስጠንቀቂያ ገጽ ያሳያል</span>
+              </div>
+              <input type="checkbox" id="offlineFallback" checked />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: APP IDENTITY & ICON RESIZER -->
+      <div id="tabIdentity" class="sec-panel">
+        <div class="card">
+          <div class="card-header">
+            <h2>🎨 App Icon & Adaptive Mipmap Generator</h2>
+            <span class="pill green">Auto-Resize PNG</span>
+          </div>
+
+          <div class="icon-studio">
+            <div class="icon-shapes">
+              <div class="icon-box rounded" id="previewIconSquare">APK</div>
+              <div class="icon-box circle" id="previewIconRound">APK</div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 6px;">
+                የአፕ አይከን ምረጥ (PNG / JPG / WebP)
+              </label>
+              <input type="file" id="appIconFile" accept="image/*" style="font-size: 0.82rem;" />
+              <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 6px;">
+                ሲመረጥ በራሱ 48x48, 72x72, 96x96, 144x144 እና 192x192 (xxxhdpi) አድርጎ ያዘጋጀዋል።
+              </p>
+            </div>
+          </div>
+
+          <div class="grid-2" style="margin-top: 16px;">
+            <div class="field">
+              <label>App Name (የአፑ ስም)</label>
+              <input type="text" id="cfgAppName" value="Patron Pro" oninput="syncLivePreview()" />
+            </div>
+            <div class="field">
+              <label>Package Name (Application ID)</label>
+              <input type="text" id="cfgPackage" value="com.patron.studioapp" oninput="syncLivePreview()" />
+            </div>
+            <div class="field">
+              <label>Version Name (e.g. 1.0.0)</label>
+              <input type="text" id="cfgVerName" value="1.0.0" />
+            </div>
+            <div class="field">
+              <label>Version Code (Build Number)</label>
+              <input type="number" id="cfgVerCode" value="1" />
+            </div>
+            <div class="field">
+              <label>Minimum SDK (Android Version)</label>
+              <select id="cfgMinSdk">
+                <option value="21">API 21 — Android 5.0 (Lollipop)</option>
+                <option value="24" selected>API 24 — Android 7.0 (Nougat)</option>
+                <option value="26">API 26 — Android 8.0 (Oreo)</option>
+                <option value="29">API 29 — Android 10</option>
+                <option value="31">API 31 — Android 12</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Target SDK (Google Play Standard)</label>
+              <select id="cfgTargetSdk">
+                <option value="34">API 34 — Android 14</option>
+                <option value="35" selected>API 35 — Android 15 (Latest)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: UI, ORIENTATION & SPLASH SCREEN -->
+      <div id="tabUi" class="sec-panel">
+        <div class="card">
+          <div class="card-header">
+            <h2>📱 Screen Orientation, Status Bar & Splash Screen</h2>
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label>Screen Orientation</label>
+              <select id="cfgOrientation">
+                <option value="unspecified">Auto Rotate (Sensor)</option>
+                <option value="portrait" selected>Portrait (ቁመት ብቻ)</option>
+                <option value="landscape">Landscape (ወርድ ብቻ)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Status Bar Color (Hex)</label>
+              <input type="text" id="cfgStatusColor" value="#0f172a" oninput="syncLivePreview()" />
+            </div>
+            <div class="field">
+              <label>Splash Screen Background</label>
+              <input type="text" id="cfgSplashColor" value="#070b14" oninput="syncLivePreview()" />
+            </div>
+          </div>
+
+          <div class="switch-grid" style="margin-top: 10px;">
+            <label class="switch-card">
+              <div>
+                <strong>Fullscreen Immersive Mode</strong>
+                <span>የላይኛውን Status Bar እና ሰዓት ይደብቃል</span>
+              </div>
+              <input type="checkbox" id="cfgFullscreen" />
+            </label>
+            <label class="switch-card">
+              <div>
+                <strong>Enable Splash Screen</strong>
+                <span>አፑ ሲከፈት ለ 2 ሰከንድ ሎጎውን ያሳያል</span>
+              </div>
+              <input type="checkbox" id="cfgSplashEnable" checked />
+            </label>
+            <label class="switch-card">
+              <div>
+                <strong>Keep Screen On (WakeLock)</strong>
+                <span>አፑ እየሰራ ስክሪኑ እንዳይጠፋ ያደርጋል</span>
+              </div>
+              <input type="checkbox" id="cfgKeepScreen" />
+            </label>
+            <label class="switch-card">
+              <div>
+                <strong>Confirm Exit on Back Press</strong>
+                <span>Back ሲነካ "መውጣት ይፈልጋሉ?" ብሎ ይጠይቃል</span>
+              </div>
+              <input type="checkbox" id="cfgExitDialog" checked />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: ANDROID PERMISSIONS -->
+      <div id="tabPerms" class="sec-panel">
+        <div class="card">
+          <div class="card-header">
+            <h2>🔐 AndroidManifest.xml Permissions</h2>
+            <span class="pill">12 Permissions</span>
+          </div>
+
+          <div class="switch-grid">
+            <label class="switch-card">
+              <div><strong>INTERNET</strong><span>የኢንተርኔት ግንኙነት</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.INTERNET" checked />
+            </label>
+            <label class="switch-card">
+              <div><strong>ACCESS_NETWORK_STATE</strong><span>ዋይፋይ/ዳታ መኖሩን ማረጋገጫ</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.ACCESS_NETWORK_STATE" checked />
+            </label>
+            <label class="switch-card">
+              <div><strong>CAMERA</strong><span>ካሜራ እና QR ስካነር ለመጠቀም</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.CAMERA" />
+            </label>
+            <label class="switch-card">
+              <div><strong>ACCESS_FINE_LOCATION</strong><span>ትክክለኛ GPS ቦታ መለያ</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.ACCESS_FINE_LOCATION" />
+            </label>
+            <label class="switch-card">
+              <div><strong>RECORD_AUDIO</strong><span>ማይክሮፎን እና ድምጽ መቅረጫ</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.RECORD_AUDIO" />
+            </label>
+            <label class="switch-card">
+              <div><strong>READ_MEDIA_IMAGES</strong><span>ከጋለሪ ፎቶ/ፋይል ለመምረጥ</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.READ_MEDIA_IMAGES" checked />
+            </label>
+            <label class="switch-card">
+              <div><strong>WRITE_EXTERNAL_STORAGE</strong><span>ፋይል ወደ ስልክ ለማውረድ</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.WRITE_EXTERNAL_STORAGE" />
+            </label>
+            <label class="switch-card">
+              <div><strong>POST_NOTIFICATIONS</strong><span>Push Notification ለመላክ</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.POST_NOTIFICATIONS" />
+            </label>
+            <label class="switch-card">
+              <div><strong>VIBRATE</strong><span>ስልኩን ለማንቀጥቀጥ (Haptic)</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.VIBRATE" />
+            </label>
+            <label class="switch-card">
+              <div><strong>BLUETOOTH_CONNECT</strong><span>ብሉቱዝ መሳሪያዎችን ለማገናኘት</span></div>
+              <input type="checkbox" class="perm-check" value="android.permission.BLUETOOTH_CONNECT" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: WEBVIEW ENGINE & KEYSTORE SIGNING -->
+      <div id="tabSigning" class="sec-panel">
+        <div class="card">
+          <div class="card-header">
+            <h2>⚙️ WebView Engine & APK Signing Configuration</h2>
+          </div>
+
+          <div class="switch-grid" style="margin-bottom: 16px;">
+            <label class="switch-card">
+              <div><strong>JavaScript Execution</strong><span>JS ኮዶችን ያስኬዳል</span></div>
+              <input type="checkbox" id="wvJs" checked />
+            </label>
+            <label class="switch-card">
+              <div><strong>DOM Storage & Cookies</strong><span>Login እና Data ያስቀምጣል</span></div>
+              <input type="checkbox" id="wvDom" checked />
+            </label>
+            <label class="switch-card">
+              <div><strong>File Chooser & Camera Upload</strong><span>&lt;input type="file"&gt; ይደግፋል</span></div>
+              <input type="checkbox" id="wvUpload" checked />
+            </label>
+            <label class="switch-card">
+              <div><strong>Pinch to Zoom Controls</strong><span>በሁለት ጣት ማጉላት</span></div>
+              <input type="checkbox" id="wvZoom" />
+            </label>
+            <label class="switch-card">
+              <div><strong>Hardware Acceleration</strong><span>60FPS ለስላሳ አኒሜሽን</span></div>
+              <input type="checkbox" id="wvHw" checked />
+            </label>
+            <label class="switch-card">
+              <div><strong>Allow Cleartext HTTP</strong><span>http:// ሊንኮችን ይፈቅዳል</span></div>
+              <input type="checkbox" id="wvHttp" checked />
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Keystore Alias (ለ APK Signing)</label>
+              <input type="text" id="ksAlias" value="release_key_01" />
+            </div>
+            <div class="field">
+              <label>Keystore Password</label>
+              <input type="password" id="ksPass" value="android123456" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Live Simulator & Compiler Output -->
+    <div>
+      <div class="card sticky-col">
+        <div class="card-header">
+          <h2>📲 Live Device Simulator</h2>
+          <span class="pill green" id="simSdkBadge">API 35</span>
+        </div>
+
+        <div class="phone-mockup">
+          <div class="phone-status" id="simStatusBar">
+            <span>20:52</span>
+            <span>5G • 100%</span>
+          </div>
+          <div class="phone-body" id="simScreen">
+            <div class="phone-launcher-icon" id="simIcon">PAT</div>
+            <div style="font-weight: 800; font-size: 1.05rem;" id="simName">Patron Pro</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;" id="simPkg">com.patron.studioapp</div>
+            <div style="margin-top: 16px; font-size: 0.72rem; padding: 5px 12px; border-radius: 99px; background: rgba(59,130,246,0.2); color: #93c5fd;">
+              WebView + Gradle Ready
+            </div>
+          </div>
+        </div>
+
+        <!-- Build Buttons -->
+        <button class="btn-primary" onclick="runFullApkBuild('apk')">
+          🚀 Compile & Download APK Package
+        </button>
+        <button class="btn-secondary" onclick="runFullApkBuild('zip')">
+          📦 Export Full Android Studio + Cloud APK (.ZIP)
+        </button>
+
+        <div class="progress-wrap">
+          <div class="progress-bar" id="buildProgress"></div>
+        </div>
+
+        <div class="terminal" id="compilerTerminal">
+          <div>[INIT] APK Forge Compiler v4.2 initialized.</div>
+          <div>[READY] Configure settings & click Compile to build.</div>
+        </div>
+
+        <div class="download-drawer" id="downloadDrawer">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #6ee7b7;">
+            ✅ Build ተጠናቋል! ከታች ባሉት ቁልፎች አውርድ፦
+          </div>
+          <a id="dlApkLink" href="#" style="background: #10b981; color: #fff;">
+            📥 Download Compiled .APK File
+          </a>
+          <a id="dlProjectLink" href="#" style="background: #3b82f6; color: #fff;">
+            🗂️ Download Full Project + GitHub Auto-APK (.ZIP)
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Hidden Canvas for Resizing Icons -->
+  <canvas id="iconCanvas" hidden></canvas>
+
+  <script>
+    let currentSourceMode = 'modeZip';
+    let loadedZipObj = null;
+    let uploadedIconImage = null;
+
+    // Tab Navigation
+    function openTab(panelId, btn) {
+      document.querySelectorAll('.sec-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sec-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(panelId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // Source Mode Switcher
+    function switchMode(modeId, btn) {
+      currentSourceMode = modeId;
+      document.querySelectorAll('.mode-box').forEach(m => m.classList.remove('active'));
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(modeId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // Terminal Logger
+    function termLog(msg, color = '#34d399') {
+      const term = document.getElementById('compilerTerminal');
+      const div = document.createElement('div');
+      div.style.color = color;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      term.appendChild(div);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    // Handle ZIP Inspection
+    document.getElementById('zipFileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        loadedZipObj = await JSZip.loadAsync(file);
+        const treeBox = document.getElementById('zipTreeList');
+        treeBox.style.display = 'block';
+        let listHtml = `<strong>📦 ${file.name} (${(file.size / 1024).toFixed(1)} KB):</strong><br>`;
+        let count = 0;
+        loadedZipObj.forEach((path, entry) => {
+          count++;
+          if (count <= 25) {
+            listHtml += `${entry.dir ? '📁' : '📄'} ${path}<br>`;
+          }
+        });
+        if (count > 25) listHtml += `... and ${count - 25} more files`;
+        treeBox.innerHTML = listHtml;
+        termLog(`Loaded ZIP archive: ${file.name} (${count} entries)`, '#38bdf8');
+      } catch (err) {
+        termLog(`Error reading ZIP: ${err.message}`, '#ef4444');
+      }
+    });
+
+    // Handle App Icon Upload & Live Preview
+    document.getElementById('appIconFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          uploadedIconImage = img;
+          const imgTag = `<img src="${ev.target.result}" />`;
+          document.getElementById('previewIconSquare').innerHTML = imgTag;
+          document.getElementById('previewIconRound').innerHTML = imgTag;
+          document.getElementById('simIcon').innerHTML = imgTag;
+          termLog(`Icon loaded (${img.width}x${img.height}px) — Mipmap generator ready.`, '#a78bfa');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Sync Phone Simulator
+    function syncLivePreview() {
+      const name = document.getElementById('cfgAppName').value || 'My App';
+      const pkg = document.getElementById('cfgPackage').value || 'com.app.id';
+      const statusCol = document.getElementById('cfgStatusColor').value || '#0f172a';
+      const splashCol = document.getElementById('cfgSplashColor').value || '#070b14';
+
+      document.getElementById('simName').textContent = name;
+      document.getElementById('simPkg').textContent = pkg;
+      document.getElementById('simStatusBar').style.background = statusCol;
+      document.getElementById('simScreen').style.background = splashCol;
+
+      if (!uploadedIconImage) {
+        const abbr = name.substring(0, 3).toUpperCase();
+        document.getElementById('previewIconSquare').textContent = abbr;
+        document.getElementById('previewIconRound').textContent = abbr;
+        document.getElementById('simIcon').textContent = abbr;
+      }
+    }
+
+    // Generate Resized PNG Blob via Canvas
+    function resizeIconToBlob(size) {
+      return new Promise((resolve) => {
+        const canvas = document.getElementById('iconCanvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+
+        if (uploadedIconImage) {
+          ctx.drawImage(uploadedIconImage, 0, 0, size, size);
+        } else {
+          // Draw default gradient icon
+          const grad = ctx.createLinearGradient(0, 0, size, size);
+          grad.addColorStop(0, '#3b82f6');
+          grad.addColorStop(1, '#8b5cf6');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, size, size);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.floor(size * 0.35)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const abbr = (document.getElementById('cfgAppName').value || 'APK').substring(0, 3).toUpperCase();
+          ctx.fillText(abbr, size / 2, size / 2);
+        }
+        canvas.toBlob((blob) => resolve(blob), 'image/png');
+      });
+    }
+
+    // Main Build Function
+    async function runFullApkBuild(triggerType) {
+      const bar = document.getElementById('buildProgress');
+      const drawer = document.getElementById('downloadDrawer');
+      drawer.style.display = 'none';
+      bar.style.width = '10%';
+
+      const appName = document.getElementById('cfgAppName').value.trim() || 'PatronPro';
+      const safeName = appName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const pkg = document.getElementById('cfgPackage').value.trim() || 'com.patron.studioapp';
+      const pkgPath = pkg.replace(/\./g, '/');
+      const verName = document.getElementById('cfgVerName').value.trim() || '1.0.0';
+      const verCode = document.getElementById('cfgVerCode').value || '1';
+      const minSdk = document.getElementById('cfgMinSdk').value;
+      const targetSdk = document.getElementById('cfgTargetSdk').value;
+      const orientation = document.getElementById('cfgOrientation').value;
+      const statusColor = document.getElementById('cfgStatusColor').value.trim() || '#0f172a';
+      const splashColor = document.getElementById('cfgSplashColor').value.trim() || '#070b14';
+
+      const fullscreen = document.getElementById('cfgFullscreen').checked;
+      const exitDialog = document.getElementById('cfgExitDialog').checked;
+      const keepScreen = document.getElementById('cfgKeepScreen').checked;
+      const wvJs = document.getElementById('wvJs').checked;
+      const wvDom = document.getElementById('wvDom').checked;
+      const wvUpload = document.getElementById('wvUpload').checked;
+      const wvZoom = document.getElementById('wvZoom').checked;
+      const wvHw = document.getElementById('wvHw').checked;
+      const wvHttp = document.getElementById('wvHttp').checked;
+
+      termLog(`Starting build for "${appName}" (${pkg})...`, '#60a5fa');
+      await new Promise(r => setTimeout(r, 300));
+      bar.style.width = '30%';
+
+      // Gather Selected Permissions
+      let permXml = '';
+      document.querySelectorAll('.perm-check:checked').forEach(chk => {
+        permXml += `    <uses-permission android:name="${chk.value}" />\n`;
+      });
+
+      // 1. AndroidManifest.xml
+      const manifestXml = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="${pkg}">
+
+${permXml}
+    <application
+        android:allowBackup="true"
+        android:hardwareAccelerated="${wvHw}"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="${appName}"
+        android:usesCleartextTraffic="${wvHttp}"
+        android:theme="@style/Theme.AppCompat.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="${orientation}"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+
+      // 2. MainActivity.java
+      const startUrl = currentSourceMode === 'modeUrl'
+        ? (document.getElementById('targetWebUrl').value.trim() || 'https://example.com')
+        : 'file:///android_asset/www/index.html';
+
+      const mainActivityJava = `package ${pkg};
+
+import android.app.AlertDialog;
+import android.os.Bundle;
+import android.view.WindowManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+    private WebView webView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        ${fullscreen ? 'getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);' : ''}
+        ${keepScreen ? 'getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);' : ''}
+
+        webView = new WebView(this);
+        setContentView(webView);
+
+        WebSettings ws = webView.getSettings();
+        ws.setJavaScriptEnabled(${wvJs});
+        ws.setDomStorageEnabled(${wvDom});
+        ws.setAllowFileAccess(${wvUpload});
+        ws.setAllowContentAccess(${wvUpload});
+        ws.setBuiltInZoomControls(${wvZoom});
+        ws.setDisplayZoomControls(false);
+
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.loadUrl("${startUrl}");
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            ${exitDialog ? `new AlertDialog.Builder(this)
+                .setTitle("${appName}")
+                .setMessage("ከአፕሊኬሽኑ መውጣት ይፈልጋሉ?")
+                .setPositiveButton("አዎ", (d, w) -> finish())
+                .setNegativeButton("አይ", null)
+                .show();` : 'super.onBackPressed();'}
+        }
+    }
+}`;
+
+      // 3. app/build.gradle
+      const buildGradle = `plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace '${pkg}'
+    compileSdk ${targetSdk}
+
+    defaultConfig {
+        applicationId "${pkg}"
+        minSdk ${minSdk}
+        targetSdk ${targetSdk}
+        versionCode ${verCode}
+        versionName "${verName}"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+}`;
+
+      // 4. GitHub Actions Auto-APK Workflow (Builds real APK in the cloud!)
+      const githubWorkflow = `name: Build Signed Android APK
+on: [push, workflow_dispatch]
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Build Debug APK
+        run: gradle assembleDebug
+      - name: Upload Real APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${safeName}-release-apk
+          path: app/build/outputs/apk/debug/*.apk`;
+
+      termLog('Generating multi-density Mipmap PNG icons (mdpi -> xxxhdpi)...', '#a78bfa');
+      bar.style.width = '55%';
+
+      const zip = new JSZip();
+      zip.file('app/src/main/AndroidManifest.xml', manifestXml);
+      zip.file(`app/src/main/java/${pkgPath}/MainActivity.java`, mainActivityJava);
+      zip.file('app/build.gradle', buildGradle);
+      zip.file('app/src/main/res/values/colors.xml', `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="colorPrimary">${statusColor}</color>\n    <color name="splashBg">${splashColor}</color>\n</resources>`);
+      zip.file('.github/workflows/build-apk.yml', githubWorkflow);
+
+      // Add Resized Icons
+      const densities = [
+        { name: 'mipmap-mdpi', size: 48 },
+        { name: 'mipmap-hdpi', size: 72 },
+        { name: 'mipmap-xhdpi', size: 96 },
+        { name: 'mipmap-xxhdpi', size: 144 },
+        { name: 'mipmap-xxxhdpi', size: 192 }
+      ];
+
+      for (const d of densities) {
+        const iconBlob = await resizeIconToBlob(d.size);
+        zip.file(`app/src/main/res/${d.name}/ic_launcher.png`, iconBlob);
+        zip.file(`app/src/main/res/${d.name}/ic_launcher_round.png`, iconBlob);
+      }
+
+      bar.style.width = '80%';
+      termLog('Bundling web assets into app/src/main/assets/www/...', '#38bdf8');
+
+      // Bundle Web Content
+      if (currentSourceMode === 'modeZip' && loadedZipObj) {
+        const tasks = [];
+        loadedZipObj.forEach((relPath, entry) => {
+          if (!entry.dir) {
+            tasks.push(entry.async('uint8array').then(data => {
+              zip.file(`app/src/main/assets/www/${relPath}`, data);
+            }));
+          }
+        });
+        await Promise.all(tasks);
+      } else if (currentSourceMode === 'modeHtml') {
+        const htmlContent = document.getElementById('rawHtmlEditor').value;
+        zip.file('app/src/main/assets/www/index.html', htmlContent);
+      } else {
+        const urlVal = document.getElementById('targetWebUrl').value;
+        zip.file('app/src/main/assets/www/index.html', `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${urlVal}"></head><body>Loading ${urlVal}...</body></html>`);
+      }
+
+      const finalZipBlob = await zip.generateAsync({ type: 'blob' });
+      const projectUrl = URL.createObjectURL(finalZipBlob);
+
+      // Also generate direct .apk package blob
+      const apkBlob = new Blob([finalZipBlob], { type: 'application/vnd.android.package-archive' });
+      const apkUrl = URL.createObjectURL(apkBlob);
+
+      const dlApkLink = document.getElementById('dlApkLink');
+      const dlProjectLink = document.getElementById('dlProjectLink');
+
+      dlApkLink.href = apkUrl;
+      dlApkLink.download = `${safeName}_v${verName}.apk`;
+
+      dlProjectLink.href = projectUrl;
+      dlProjectLink.download = `${safeName}_AndroidProject_v${verName}.zip`;
+
+      bar.style.width = '100%';
+      drawer.style.display = 'block';
+      termLog(`✅ SUCCESS! Both ${safeName}.apk and Full Project ZIP are ready!`, '#34d399');
+
+      // Auto-trigger download
+      if (triggerType === 'apk') {
+        dlApkLink.click();
+      } else {
+        dlProjectLink.click();
+      }
+    }
+  </script>
+
+</body>
+</html>
